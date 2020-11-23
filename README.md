@@ -8,11 +8,7 @@
  This is a pure openCV python code, using carefully designed algorithms. Supervised machine learning was avoided due to a lack of a dataset. 
  State of the art object detection neural networks would definitely outperform the developed algorithms and any other supervised machine learning algorithm. 
  
- The algorithms were not developed seeking optimal computational performance, so parallelization and efficient data structures could further optimize the code. 
- 
- The algorithms could also be further improved by fine-tuning all global parameters. 
- 
- Another possible improvement is first identifying and removing the numbers in the image as it tends to have high accuracy. However, for now we tried to avoid any supervised machine learning.  
+  
 
 ## Ladder Detection
 
@@ -41,6 +37,12 @@ The snake tail is defined as a single pixel, located on the extreme opposing the
 ### Limitations
 The algorithm works for the given image, as the snakes are solid, large and dark. The algorithm is also sensitive to the extra objects found in the image (ladders, numbers, grid) and might fail if the extra objects are not properly removed. 
 
+## Possible Improvements
 
+The algorithms were not developed seeking optimal computational performance, so parallelization and efficient data structures could further optimize the code. 
+ 
+The algorithms could also be further improved by fine-tuning all global parameters. 
+ 
+Another possible improvement is first identifying and removing the numbers in the image as it tends to have high accuracy. However, for now we tried to avoid any supervised machine learning. 
  
  
