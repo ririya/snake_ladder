@@ -1,10 +1,8 @@
 """
-Snake Ladder detection
+Snake Ladder Detection
 Author: Rafael Iriya
 Nov/2020
 """
-
-
 
 import pickle
 import os
@@ -12,7 +10,6 @@ import cv2
 from params import *
 import ladder_detection
 import snake_detection
-
 
 #Read image, convert to gray and smooth with gaussian blur
 img = cv2.imread(board_image_path)
@@ -28,14 +25,16 @@ else:
 
     print('Deteting ladders...')
 
-    ladders, ladder_end_points, lines = ladder_detection.detect_ladders(img, blur_gray, colors,
-                                                                 results_dir)
+    ladders, ladder_end_points, lines, img_results = ladder_detection.detect_ladders(img,
+                                                                                     blur_gray,
+                                                                                     colors,
+                                                                                     results_dir)
 
     pickle.dump([ladders,ladder_end_points, lines], open(ladder_cache_path, "wb"))
 
 
 print('Deteting snakes...')
 snake_head_segmentation,snake_heads,snake_tails = snake_detection.detect_snakes(img,blur_gray,
-                                                                             ladders, lines)
+                                                                        img_results,ladders, lines)
 
 print("Done")

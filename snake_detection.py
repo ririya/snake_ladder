@@ -485,7 +485,7 @@ def find_snake_tails(snakes, head_centers):
 
 
 
-def detect_snakes(img,blur_gray, ladders = [], lines = []):
+def detect_snakes(img,blur_gray, img_results, ladders = [], lines = []):
     
     #start by segmenting the image and generating a binary image
     seg_img = segment_image(img,blur_gray,ladders,lines)
@@ -500,17 +500,24 @@ def detect_snakes(img,blur_gray, ladders = [], lines = []):
     snake_tails = find_snake_tails(snakes, head_centers)
 
     #Plot results
-    result_img = img.copy()
+    img_snake_results = img.copy()
 
     for ind_snake in range(len(snakes)):
-        cv2.circle(result_img, tuple(snake_tails[ind_snake].tolist()), 20, (0, 255, 0), 5)
-        cv2.circle(result_img, tuple(head_centers[ind_snake].tolist()), 20, (255, 0, 0), 5)
+        cv2.circle(img_snake_results, tuple(snake_tails[ind_snake].tolist()), 20, (0, 255, 0), 5)
+        cv2.circle(img_snake_results, tuple(head_centers[ind_snake].tolist()), 20, (255, 0, 0), 5)
+        cv2.circle(img_results, tuple(snake_tails[ind_snake].tolist()), 20, (0, 255, 0), 5)
+        cv2.circle(img_results, tuple(head_centers[ind_snake].tolist()), 20, (255, 0, 0), 5)
 
-    plt.figure(4)
-    plt.imshow(result_img)
+    plt.figure()
+    plt.imshow(img_snake_results)
     plt.show()
-    plt.close(4)
-    cv2.imwrite(os.path.join(results_dir, "snake_head_and_tails.png"), result_img)
+    cv2.imwrite(os.path.join(results_dir, "snake_head_and_tails.png"), img_snake_results)
+
+    plt.figure()
+    plt.imshow(img_results)
+    plt.show()
+    cv2.imwrite(os.path.join(results_dir, "detected_stairs_and_snakes.png"), img_results)
+
 
     return snake_heads,head_centers, snake_tails
 

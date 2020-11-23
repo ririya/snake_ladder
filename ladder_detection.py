@@ -7,69 +7,57 @@ import cv2
 
 from params import*
 
-# def intersection(L1, L2):
-#     D  = L1[0] * L2[1] - L1[1] * L2[0]
-#     Dx = L1[2] * L2[1] - L1[1] * L2[2]
-#     Dy = L1[0] * L2[2] - L1[2] * L2[0]
-#     if D != 0:
-#         x = Dx / D
-#         y = Dy / D
-#         return x,y
-#     else:
-#         return False
 
-# def find_intersection(a1,b1,c1,a2,b2,c2):
-#     determinant = a1*b2 - a2*b1
-#     x = (c1*b2 - c2*b1) / determinant
-#     y = (a1*c2 - a2*c1) / determinant
-#
-#     return (x,y)
-#
-# def find_reciprocals(m1,b1,m2,b2,c2, point):
-#
-#     perp_m = -1/m1
-#     perp_b = point[1] - perp_m*point[0]
-#
-#     perp_c = -perp_m * point[0] - perp_b * point[1]
-#
-#     return find_intersection(perp_m, perp_b, perp_c, m2,b2,c2)
-#
-#
-# for ladder in ladders:
-#
-#     line_ind1 = ladder[0]
-#     line_ind2 = ladder[1]
-#
-#     line1 = lines[ind_line1]
-#     line2 = lines[ind_line2]
-#
-#     m1, b1, _, _, _ = get_linear_coefs(line1[0][0])
-#     m2, b2, _, _, _ = get_linear_coefs(line2[0][0])
-#     point_1 = line1[0][0][0]
-#     point_2 = line2[0][0][0]
-#
-#     left_recip_12 = find_reciprocals(m1,-1, m2, -1, -b2, line1[2][0])
-#     right_recip_12 = find_reciprocals(m1, -1, m2, -1, -b2, line1[2][1])
-#
-#     left_recip_21 = find_reciprocals(m2, -1, m1, -1, -b1, line2[2][0])
-#     right_recip_21 = find_reciprocals(m2, -1, m1, -1, -b1, line2[2][1])
+def find_intersection(a,c,b,d):
+    #find intersection between lines ax + c and bx + d
 
-# def shortest_distance(x1, y1, a, b, c):
-#     d = abs((a * x1 + b * y1 + c)) / (math.sqrt(a * a + b * b))
-#     return d
+    x = int(np.round((d - c) / (a - b)))
 
+    y = int(np.round(a*x + c))
+
+    return (x,y)
+
+def find_reciprocals(m, b, perp_m, point):
+
+    #calculate intersection of base line and perpendicular line
+    perp_b = point[1] - perp_m*point[0]
+
+    #calculate intersection of parallel line and perpendicular line
+    return find_intersection(perp_m, perp_b, m,b)
+
+def find_all_reciprocal_end_points(ladder, lines):
+
+    line_ind1 = ladder[0]
+    line_ind2 = ladder[1]
+    line_ind3 = ladder[2]
+
+    line1 = lines[line_ind1]
+    line2 = lines[line_ind2]
+    line3 = lines[line_ind3]
+
+    m1, b1, _, _, _ = get_linear_coefs(line1[0][0])
+    m2, b2, _, _, _ = get_linear_coefs(line2[0][0])
+    m3, _, _, _, _ = get_linear_coefs(line3[0][0])
+
+    #find reciprocal end points of line 1 on line 2
+    left_recip_12 = find_reciprocals(m2, b2, m3, line1[2][0])
+    right_recip_12 = find_reciprocals(m2, b2, m3, line1[2][1])
+
+    #find reciprocals end points of line 2 on line 1
+    left_recip_21 = find_reciprocals(m1, b1, m3, line2[2][0])
+    right_recip_21 = find_reciprocals(m1, b1, m3, line2[2][1])
+
+
+    return (left_recip_12, right_recip_12, left_recip_21, right_recip_21)
 
 def get_angle(x1, x2, y1, y2):
     angle = math.atan2(y2 - y1, x2 - x1)
     angle = math.degrees(angle)
-
-    # if angle < 0:
-    #     angle += 360
-
     return angle
 
 
 def reorder_points(p1, p2):
+
     combined = [p1.tolist(), p2.tolist()]
     combined.sort()
 
@@ -79,8 +67,6 @@ def reorder_points(p1, p2):
 def get_linear_coefs(line_seg):
     p1 = line_seg[0]
     p2 = line_seg[1]
-
-    # p1,p2 = reorder_points(p1,p2)
 
     m = (p2[1] - p1[1]) / (p2[0] - p1[0])
     angle = get_angle(p1[0], p2[0], p1[1], p2[1])
@@ -93,7 +79,7 @@ def get_linear_coefs(line_seg):
 def euclid_distance(p1, p2):
     d = np.linalg.norm(np.array(p1) - np.array(p2))
 
-    if d == 0:
+    if d == 0:  # disregard when it's the same point
         return float('inf')
     return d
 
@@ -168,7 +154,6 @@ def find_lines(img, blur_gray, lines, line_segs, n_line_segs, min_line_length, g
         p1, p2 = reorder_points(p1, p2)
 
         angle = get_angle(p1[0], p2[0], p1[1], p2[1])
-
 
         #ignore grid lines, parallel to the image axis
         if abs(abs(angle) - 90) < ANGLE_TOL or abs(abs(angle) - 0) < ANGLE_TOL or abs(abs( \
@@ -277,26 +262,6 @@ def eliminate_outliers(lines, img):
 
         new_line_segs = []
 
-        # sorted_line_segs = np.array(line_segs).tolist()
-        #
-        # sorted_line_segs.sort()
-        #
-        # last_point = sorted_line_segs[0][1]
-        #
-        # new_line_segs.append(sorted_line_segs[0])
-        #
-        # for ind_line_seg in range(1,len(sorted_line_segs)):
-        #
-        #     line_seg = sorted_line_segs[ind_line_seg]
-        #
-        #     if euclid_distance(line_seg[0], last_point) < GAP_THRES:
-        #         new_line_segs.append([np.array(line_seg[0]),np.array(line_seg[1])])
-        #         last_point = line_seg[1]
-        #     else:
-        #         break
-        #
-        # line_segs_2 = new_line_segs
-
         for ind_line_seg, line_seg in enumerate(line_segs):
 
             min_dist = float('inf')
@@ -315,7 +280,6 @@ def eliminate_outliers(lines, img):
                 gap_dist = euclid_distance(line_seg[0], line_seg_2[0])
                 min_dist = min(gap_dist, min_dist)
 
-            # gap_dist = euclid_distance(last_point, point[0])
             if min_dist > GAP_THRES_2:
                 continue
 
@@ -401,10 +365,9 @@ def find_ladders(lines, img):
 
                     m3, _, angle3, p1_3, p2_3 = get_linear_coefs(line3[0][0])
 
-                    # if abs(m1*m3 + 1) <= EPS: #perpendicular lines
-
                     # now need to check if perpendicular line extremities are close to the ladder
-                    # handles. In some cases the lines are not perpendicular (smallest ladder)
+                    # handles. In some cases the lines are not perpendicular (smallest ladder) so
+                    # we do not enforce lines to be perpendicular
 
                     d1_13 = abs(
                         np.cross(p2_1 - p1_1, p1_3 - p1_1) / np.linalg.norm(p2_1 - p1_1))
@@ -433,7 +396,7 @@ def find_ladders(lines, img):
 def plot_ladders(ladders, lines, img, colors, results_dir):
 
     """
-    plot ladder points and find extremities. This algorithm makes no distintion between start
+    plot ladder points and find extreme points. This algorithm makes no distinction between start
     and end of the ladder
     """
 
@@ -448,6 +411,33 @@ def plot_ladders(ladders, lines, img, colors, results_dir):
 
         curr_ladder_end_points = []
 
+        """
+        If there are mistakes in the line detection, we correct them by finding the reciprocal end 
+        points in the parallel line. We choose the point closest to the center of the ladder as the base and 
+        substitute the point in the other line with its reciprocal
+        """
+        left_recip_12, right_recip_12, left_recip_21, right_recip_21 = \
+            find_all_reciprocal_end_points(ladder, lines)
+
+        line1 = lines[ladder[0]]
+        line2 = lines[ladder[1]]
+
+        line1_left = line1[2][0]
+        line2_left = line2[2][0]
+
+        line1_right = line1[2][1]
+        line2_right = line2[2][1]
+
+        if line1_left[0] < line2_left[0]:
+            line1[2][0] = np.array(left_recip_21)
+        else:
+            line2[2][0] = np.array(left_recip_12)
+
+        if line1_right[0] > line2_right[0]:
+            line1[2][1] = np.array(right_recip_21)
+        else:
+            line2[2][1] = np.array(right_recip_12)
+
         for ind, ind_line in enumerate(ladder):
 
             line = lines[ind_line]
@@ -460,6 +450,7 @@ def plot_ladders(ladders, lines, img, colors, results_dir):
                 cv2.line(img_ladders2, (x1, y1), (x2, y2), colors[ind_color], 3)
 
             if ind < 2:
+
                 cv2.circle(img_ladders, tuple(line[2][0].tolist()), 20, colors[ind_color], 5)
                 cv2.circle(img_ladders, tuple(line[2][1].tolist()), 20, colors[ind_color], 5)
                 cv2.circle(img_ladders2, tuple(line[2][0].tolist()), 20, colors[ind_color], 5)
@@ -472,10 +463,14 @@ def plot_ladders(ladders, lines, img, colors, results_dir):
 
         ind_color = (ind_color + 1) % len(colors)
 
-    cv2.imwrite(os.path.join(results_dir, 'img_ladders.png'), img_ladders)
-    cv2.imwrite(os.path.join(results_dir, 'img_ladders_2.png'), img_ladders2)
+    plt.figure()
+    plt.imshow(img_ladders)
+    plt.show()
 
-    return ladder_end_points
+    cv2.imwrite(os.path.join(results_dir, 'ladders.png'), img_ladders)
+    cv2.imwrite(os.path.join(results_dir, 'ladders_no_bg.png'), img_ladders2)
+
+    return ladder_end_points, img_ladders
 
 
 def detect_ladders(img, blur_gray, colors, results_dir):
@@ -513,7 +508,6 @@ def detect_ladders(img, blur_gray, colors, results_dir):
 
     #eliminate isolated line segments (outliers)
     eliminate_outliers(lines, img)
-    '' \
 
     #get line start and end points
     get_line_lens(lines, img)
@@ -522,6 +516,6 @@ def detect_ladders(img, blur_gray, colors, results_dir):
     ladders = find_ladders(lines, img)
 
     #find ladder extreme points
-    ladder_end_points = plot_ladders(ladders, lines, img, colors, results_dir)
+    ladder_end_points, img_ladder_results = plot_ladders(ladders, lines, img, colors, results_dir)
 
-    return ladders, ladder_end_points, lines
+    return ladders, ladder_end_points, lines, img_ladder_results
