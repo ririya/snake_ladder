@@ -99,6 +99,13 @@ def euclid_distance(p1, p2):
 
 
 def is_shadow(p1line, p2line, img, blur_gray):
+
+    """
+    Since shadows are not as dark as the real ladder lines, we search a square patch around the
+    segment points for dark spots. The line detection sometimes does not land exactly on the
+    ladder pixels, that's why a patch is needed.
+    """
+
     img_shape = img.shape
 
     min_int = []
@@ -128,6 +135,21 @@ def is_shadow(p1line, p2line, img, blur_gray):
 
 
 def find_lines(img, blur_gray, lines, line_segs, n_line_segs, min_line_length, generate_stems, desc):
+
+    """
+    Two modes of operation:
+    generate_stems = True: The algorithm finds base line segments larger than a threshold and
+    ignores other line segments in the same line. The threshold is used to save computational
+    time and reduces noise. We assume the ladder main segments are relatively large compared to
+    other line segments in the image and at least one will be greater than the threshold.
+
+    generate_stems = False: The algorithm adds other line segments to the base lines. In this
+    case we should consider a smaller line_length threshold.
+
+    line segments are determined to be in the same line if their angles are similar and the
+    distance from the two line segments is small.
+    """
+
     for ind_line_seg in tqdm.tqdm(range(n_line_segs), desc=desc):
 
         line = line_segs[ind_line_seg]
@@ -142,14 +164,18 @@ def find_lines(img, blur_gray, lines, line_segs, n_line_segs, min_line_length, g
         p1 = np.array([x1, y1], dtype=int)
         p2 = np.array([x2, y2], dtype=int)
 
+        #reorder points in sorted order. this ensures the angle calculation is always consistent
         p1, p2 = reorder_points(p1, p2)
 
         angle = get_angle(p1[0], p2[0], p1[1], p2[1])
 
+
+        #ignore grid lines, parallel to the image axis
         if abs(abs(angle) - 90) < ANGLE_TOL or abs(abs(angle) - 0) < ANGLE_TOL or abs(abs( \
                 angle) - 180) < ANGLE_TOL or abs(abs(angle) - 360) < ANGLE_TOL:
             continue
 
+        # determines if it is a real ladder line segment or a shadow
         if is_shadow(p1, p2, img, blur_gray):
             continue
 
@@ -157,6 +183,7 @@ def find_lines(img, blur_gray, lines, line_segs, n_line_segs, min_line_length, g
 
         min_dist = float('inf')
 
+        #search for the closest line_stem to this line segment
         for ind_line, line in enumerate(lines):
 
             p1line = line[0][0][0]
@@ -164,12 +191,13 @@ def find_lines(img, blur_gray, lines, line_segs, n_line_segs, min_line_length, g
 
             angle2 = get_angle(p1line[0], p2line[0], p1line[1], p2line[1])
 
+            # Calculate the distance between lines and points using a linear algebra formula
             d1_ = abs(np.cross(p2line - p1line, p1 - p1line) / np.linalg.norm(p2line - p1line))
             d2_ = abs(np.cross(p2line - p1line, p2 - p1line) / np.linalg.norm(p2line - p1line))
 
             angle_diff = abs(angle - angle2)
 
-            if angle_diff < ANGLE_TOL:
+            if angle_diff < ANGLE_TOL:  #angles must be similar
                 if d1_ < MAX_DIST_LINE and d2_ < MAX_DIST_LINE and d1_ + d2_ < min_dist:
                     min_dist = d1_ + d2_
                     min_ind = ind_line
@@ -217,6 +245,9 @@ def save_lines(lines, img, name, colors, results_dir):
 
 
 def detect_lines(img, blur_gray, results_dir):
+    """
+    Detect lines using the Line Segment Detection algorithm
+    """
     detector = cv2.createLineSegmentDetector()
 
     line_segs = detector.detect(blur_gray)
@@ -233,6 +264,12 @@ def detect_lines(img, blur_gray, results_dir):
 
 
 def eliminate_outliers(lines, img):
+
+    """
+    Look for line segments that are too far from the rest any other line segment in the line and
+    remove them
+    """
+
     for ind_line in tqdm.tqdm(range(len(lines)),desc="Outlier Removal"):
 
         line = lines[ind_line]
@@ -288,6 +325,9 @@ def eliminate_outliers(lines, img):
 
 
 def get_line_lens(lines, img):
+
+    #gets the total line length for each line, determining start and end points, from left to right
+
     for ind_line, line in enumerate(lines):
 
         min_x = float('inf')
@@ -313,11 +353,10 @@ def get_line_lens(lines, img):
 
         lines[ind_line][1] = line_len
         lines[ind_line][2] = [min_point, max_point]
-        # line_lens.append(line_len)
 
 
 def find_ladders(lines, img):
-    # find group of 3 lines that form a ladder (2 parallel + perpendicular connection)
+    # find group of 3 lines that form a ladder (2 parallel + perpendicular connection in H shape)
     n_lines = len(lines)
     already_in_ladder = set()
 
@@ -364,8 +403,9 @@ def find_ladders(lines, img):
 
                     # if abs(m1*m3 + 1) <= EPS: #perpendicular lines
 
-                    # now need to check if perdicular line extremities are close to the ladder
-                    # handles
+                    # now need to check if perpendicular line extremities are close to the ladder
+                    # handles. In some cases the lines are not perpendicular (smallest ladder)
+
                     d1_13 = abs(
                         np.cross(p2_1 - p1_1, p1_3 - p1_1) / np.linalg.norm(p2_1 - p1_1))
                     d1_23 = abs(
@@ -391,6 +431,12 @@ def find_ladders(lines, img):
 
 
 def plot_ladders(ladders, lines, img, colors, results_dir):
+
+    """
+    plot ladder points and find extremities. This algorithm makes no distintion between start
+    and end of the ladder
+    """
+
     img_ladders = img.copy()
     img_ladders2 = np.zeros_like(img)
 
@@ -433,37 +479,49 @@ def plot_ladders(ladders, lines, img, colors, results_dir):
 
 
 def detect_ladders(img, blur_gray, colors, results_dir):
+
+    """
+    Detect ladders based on lines that form a H shape
+    """
+
+    #Detect all line segments in the image
     line_segs = detect_lines(img, blur_gray, results_dir)
 
+    #Caching for fast run. FORCE_CALCULATE_LINES ignores the cached results
     lines_path = os.path.join(results_dir, "lines.pkl")
-
     if os.path.exists(lines_path) and not FORCE_CALCULATE_LINES:
         lines = pickle.load(open(lines_path, "rb"))
 
     else:
-
         lines = []
         line_segs = line_segs[0].tolist()
         line_segs.sort()
         n_line_segs = len(line_segs)
 
+        # Detect the base line segments aka stems for the stairs
         find_lines(img, blur_gray, lines, line_segs, n_line_segs,
                         min_line_length=MIN_LINE_LENGTH,
                         generate_stems=True, desc = "Line Stem Detection")
 
         save_lines(lines, img, "stems", colors, results_dir)
 
+        # Add other segments that lie on the same lines
         find_lines(img, blur_gray, lines, line_segs, n_line_segs, min_line_length=0,
                         generate_stems=False, desc = "Line Detection")
 
         save_lines(lines, img, "lines", colors, results_dir)
 
+    #eliminate isolated line segments (outliers)
     eliminate_outliers(lines, img)
+    '' \
 
+    #get line start and end points
     get_line_lens(lines, img)
 
+    #find ladders by combining groups of lines with a H shape
     ladders = find_ladders(lines, img)
 
+    #find ladder extreme points
     ladder_end_points = plot_ladders(ladders, lines, img, colors, results_dir)
 
     return ladders, ladder_end_points, lines

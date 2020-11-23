@@ -10,7 +10,12 @@ from ladder_detection import get_angle,reorder_points,detect_lines, detect_ladde
 from params import*
 
 def find_grid_lines(img, blur_gray, lines, min_line_length):
-
+        
+        """
+        Similar to the algorithm used on ladder detection, but this time we look for the grid 
+        lines, which are parallel to the image axes
+        """
+        
         line_segs = detect_lines(img, blur_gray, results_dir)
         line_segs = line_segs[0]
         n_line_segs = len(line_segs)
@@ -144,7 +149,13 @@ def check_color_spaces(img):
         pass
 
 def segment_image(img, blur_gray, ladders, lines):
-
+    
+    """
+    Segments the image by applying k-means and finding the label with smallest norm (darkest)
+    Delete ladder and grid lines 
+    """
+    
+    #Caching for fast run. FORCE_SEGMENT_IMAGE = True ignores the cached results.
     seg_img_path = os.path.join(results_dir, "seg_img.png")
 
     if not os.path.exists(seg_img_path) or FORCE_SEGMENT_IMAGE:
@@ -159,15 +170,16 @@ def segment_image(img, blur_gray, ladders, lines):
         labels = kmeansRGB.labels_
 
         labels = labels.reshape((img.shape[0], img.shape[1]))
-
+        
         cluster_norms = [np.linalg.norm(cluster) for cluster in kmeansRGB.cluster_centers_]
-        ind_black = np.argmin(np.array(cluster_norms))
+        ind_black = np.argmin(np.array(cluster_norms))  #label with smallest norm (darkest)
 
         seg_img = np.zeros_like(labels)
         seg_img = seg_img.astype(np.uint8)
         seg_img[labels == ind_black] = 255
 
-        seg_img = np.stack((seg_img, seg_img, seg_img), axis=-1)
+        seg_img = np.stack((seg_img, seg_img, seg_img), axis=-1)  #converts to 3 channel to use 
+        # cv2.line()
 
         if DEBUG:
             plt.figure(2)
@@ -222,9 +234,11 @@ def segment_image(img, blur_gray, ladders, lines):
 def find_snakes(seg_img):
 
     """
-    delete extra elements from the scene (numbers, line and ladder leftovers)
-    the extra elements will become small after an "open" operation
-    only connected components left should be the snakes
+    
+    Find snake connected components. First, delete extra elements from the scene (numbers, 
+    line and ladder leftovers). The extra elements will become small after an "open" operation
+    only connected components left should be the snakes. Snake conn components are assumed to be 
+    relatively large.
     """
 
     print("Finding Snakes...")
@@ -297,7 +311,8 @@ def find_snakes(seg_img):
         conn_comp_full = np.zeros(seg_img.shape, dtype=np.uint8)
         cv2.drawContours(conn_comp_full, [cnt], 0, 1, -1)
 
-        conn_comp = conn_comp_full * closing
+        conn_comp = conn_comp_full * closing  #this multiplication ensures we are not using any 
+        # holes filled by draw contours
 
         area = np.sum(conn_comp[:] / 255)
         if area > CONTOUR_AREA_THRES:
@@ -318,20 +333,32 @@ def find_snakes(seg_img):
     return snakes, closing
 
 def find_snake_heads(seg_img, img, snakes,closing):
+    
+    """
+    Find snake heads by 
+    1)identifying a marker for the head
+    2)finding the body
+    3)the head will be the greatest connect component from subtracting the snake and body 
+    
+    We are returning a segmented image of the head and also the centroid
+    """
 
     print("Finding Snake Heads...")
-    # for each comp perform increasing open operation until image vanishes, last part to be
-    # disappear will be a marker for the head
-
+ 
+    
     snake_heads =[]
     head_centers = []
 
     all_snake_heads = np.zeros(seg_img.shape, dtype=np.uint8)
 
+   
     for comp in snakes:
 
+        # for each snake perform an increasing open operation until the image vanishes, last part 
+        # to disappear will be a marker for the head
+        
         i = 1
-
+        
         while True:
 
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -347,7 +374,7 @@ def find_snake_heads(seg_img, img, snakes,closing):
                 plt.show()
                 plt.close(100)
 
-        #find marker complement; marker divides the snake into 2 halfs one containing the body and
+        #find marker complement; marker divides the snake into 2 halves one containing the body and
         #one containing the remaining of the head
 
         marker_complement = comp.copy()
@@ -383,7 +410,7 @@ def find_snake_heads(seg_img, img, snakes,closing):
 
         cv2.drawContours(snake_head2, [contours[0]], 0, 255, -1)
 
-        snake_head2 = snake_head2*closing
+        snake_head2 = snake_head2*closing #multiplication to ignore holes filled by drawContours
 
         if DEBUG:
             plt.figure(100)
@@ -391,7 +418,7 @@ def find_snake_heads(seg_img, img, snakes,closing):
             plt.show()
             plt.close(100)
 
-        # calculate center of head
+        # calculate head centroid by using Hu moments
         M = cv2.moments(snake_head2)
         cX = int(M["m10"] / M["m00"])
         cY = int(M["m01"] / M["m00"])
@@ -408,18 +435,24 @@ def find_snake_heads(seg_img, img, snakes,closing):
 
         snake_heads.append(snake_head2)
 
-    if DEBUG:
-        plt.figure(4)
+    all_snake_heads_2 = img.copy()
+    all_snake_heads_2[all_snake_heads == 1] = [0, 255, 0]
 
-        all_snake_heads_2 = img.copy()
-        all_snake_heads_2[all_snake_heads == 255] = [0,255,0]
-        plt.imshow(all_snake_heads_2)
-        plt.show()
-        plt.close(4)
+    # if DEBUG:
+        # plt.figure(4)
+        # plt.imshow(all_snake_heads_2)
+        # plt.show()
+        # plt.close(4)
+
+    cv2.imwrite(os.path.join(results_dir, "snake_heads.png"), all_snake_heads_2)
 
     return all_snake_heads, snake_heads,head_centers
 
 def find_snake_tails(snakes, head_centers):
+
+    """
+    The snake tail is the farthest snake's pixel from the head centroid.
+    """
 
     snake_tails = []
 
@@ -453,15 +486,20 @@ def find_snake_tails(snakes, head_centers):
 
 
 def detect_snakes(img,blur_gray, ladders = [], lines = []):
-
+    
+    #start by segmenting the image and generating a binary image
     seg_img = segment_image(img,blur_gray,ladders,lines)
-
+    
+    #find snake connected components
     snakes,closing = find_snakes(seg_img)
-
+    
+    #find snake heads (segmentation and centroids)
     all_snake_heads, snake_heads, head_centers = find_snake_heads(seg_img,img,snakes, closing)
-
+    
+    #find snake end points (single pixel)
     snake_tails = find_snake_tails(snakes, head_centers)
 
+    #Plot results
     result_img = img.copy()
 
     for ind_snake in range(len(snakes)):
@@ -474,7 +512,7 @@ def detect_snakes(img,blur_gray, ladders = [], lines = []):
     plt.close(4)
     cv2.imwrite(os.path.join(results_dir, "snake_head_and_tails.png"), result_img)
 
-    return all_snake_heads,snake_heads, snake_tails
+    return snake_heads,head_centers, snake_tails
 
 
 
