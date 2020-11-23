@@ -45,7 +45,7 @@ The snake tail is defined as a single pixel, located on the extreme opposing the
 ### Limitations
 The algorithm works for the given image, as the snakes are solid, large and dark. The algorithm is also sensitive to the extra objects found in the image (ladders, numbers, grid) and might fail if the extra objects are not properly removed. 
 
-PS:Due to the random nature of K-means, there is a small chance the labels will not be segmented correctly. If that happens, just rerun the algorithm.
+PS: Due to the random nature of K-means, there is a small chance the labels will not be segmented correctly. If that happens, just rerun the algorithm.
 
 ## Possible Improvements
 
