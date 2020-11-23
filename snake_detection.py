@@ -516,7 +516,7 @@ def detect_snakes(img,blur_gray, img_results, ladders = [], lines = []):
     plt.figure()
     plt.imshow(img_results)
     plt.show()
-    cv2.imwrite(os.path.join(results_dir, "detected_stairs_and_snakes.png"), img_results)
+    cv2.imwrite(os.path.join(results_dir, "detected_ladders_and_snakes.png"), img_results)
 
 
     return snake_heads,head_centers, snake_tails
