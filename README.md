@@ -12,10 +12,17 @@
 
 ## Ladder Detection
 
+### Line detection
 This algorithm relies on LSD (Line Segment Detection) combined with linear algebra principles. First, we detect base line segments (stems) for the stairs, 
 then we add other line segments that lie on the same line. Line segments are considered to be in the same line if they have similar angles and are close to each other. 
 
-Stairs are detected by combining 3 lines that form a H shape (2 parallel lines + 1 perpendicular). However in the given board one stair does not have perpendicular lines, so we do not enforce this constraint. Instead we look for lines that connect the parallel lines, where the end points are close enough to one of the parallel lines.
+### Line Grouping
+Stairs are detected by combining 3 lines that form a H shape (2 parallel lines + 1 perpendicular). However in the given board one stair does not have perpendicular lines, so we do not enforce this constraint. Instead we look for lines that connect the parallel lines, where the end points are close enough to one of the parallel lines. 
+
+### End Point Correction
+If there are mistakes in the line detection, we correct the end points by finding the reciprocal end 
+points in the parallel line. We choose the point closest to the center of the ladder as the base and 
+substitute the point in the other line with its reciprocal.
 
 
 ### Limitations
