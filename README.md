@@ -31,6 +31,8 @@ This algorithm works for the given image as there are no stairs parallel to the 
 
 For simplicity, there's no distinction between ladder start and end. We could find this difference by comparing the size of the last "H" in both ends. Once again we use linear algebra to detect the intersection points of the last H and find their sizes. In this case we would need to properly identify all the perpendicular lines in the stair. This could be achieved by reapplying the LSD algorithm on bounding boxes enclosing the detected stairs. Since there are potentially less artifact elements in the bounding box we could relax on the algorithm constraints. 
 
+PS:Due to the random nature of K-means, there is a small chance the labels will not be segmented correctly. If that happens, just rerun the algorithm.
+
 ## Snake Detection 
 
 This algorithm makes use of the fact the snakes are solid, large, dark objects in the image. We start by segmenting the image using K-means and looking for the label with darkest color. We explored different color spaces like HSV and Lab for this task and determined RGB was the best choice. Next, we delete the stair lines and the grid lines to make snake detetion easier. We also make use of opening and closing operations to get rid of remaining objects. 
