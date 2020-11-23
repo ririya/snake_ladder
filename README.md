@@ -57,11 +57,11 @@ Another possible improvement is first identifying and removing the numbers in th
  
 ## Dependencies
 
-The conda virtual env folder venv is included in the source. The full list of dependencies are included in the source in the file dependencies.txt. The main dependencies are:
+The conda virtual env folder **venv** is included in the source. The full list of dependencies are included in the source in the file **dependencies.txt**. The main dependencies are:
 
-Python 3.7.7
-OpenCV 3.4.2
-Numpy 1.19
-Scikit-learn 0.22.1
-Matplotlib 3.2.2
-Tqdm 4.51.0
+- Python 3.7.7
+- OpenCV 3.4.2
+- Numpy 1.19
+- Scikit-learn 0.22.1
+- Matplotlib 3.2.2
+- Tqdm 4.51.0
