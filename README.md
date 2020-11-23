@@ -20,7 +20,7 @@ then we add other line segments that lie on the same line. Line segments are con
 Stairs are detected by combining 3 lines that form a H shape (2 parallel lines + 1 perpendicular). However in the given board one stair does not have perpendicular lines, so we do not enforce this constraint. Instead we look for lines that connect the parallel lines, where the end points are close enough to one of the parallel lines.
 
 
-#### Limitations
+### Limitations
 
 This algorithm works for the given image as there are no stairs parallel to the grid. The code would also fail in the case of colinear stairs. In this case, we would need some additional contraints on the size of the lines and distance between them, and design a more robust outlier algorithm for detecting the colinear stair case. 
 
