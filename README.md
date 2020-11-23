@@ -5,7 +5,7 @@
  This code detects snakes and ladders in a board image. Ladders are defined by their end point pixels with no distinction between start and end. 
  The snake head is defined by it's centroid (however we also compute the head segmentation) and the snake tail is defined by the extreme pixel, opposing the head.
  
- This is a pure openCV python code, using carefully designed algorithms. Supervised machine learning was avoided due to a lack of a dataset. 
+ This is a pure OpenCV python code, using carefully designed algorithms. Supervised machine learning was avoided due to a lack of a dataset. 
  State of the art object detection neural networks would definitely outperform the developed algorithms and any other supervised machine learning algorithm. 
  
   
