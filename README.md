@@ -24,7 +24,7 @@ Stairs are detected by combining 3 lines that form a H shape (2 parallel lines +
 
 This algorithm works for the given image as there are no stairs parallel to the grid. The code would also fail in the case of colinear stairs. In this case, we would need some additional contraints on the size of the lines and distance between them, and design a more robust outlier algorithm for detecting the colinear stair case. 
 
-For simplicity, there's no distinction between ladder start and end. We could find this difference by comparing the size of the last "H" in both ends. Once again we use linear algebra to detect the intersection points of the last H and find their sizes. In this case we would need to properly identify all the perpendicular lines in the stair. This could be achieved by reapplying the LSD algorithm on a bounding boxes enclosing the detected stairs. Since there are potentially less artifact elements in the bounding box we could relax on the algorithm constraints. 
+For simplicity, there's no distinction between ladder start and end. We could find this difference by comparing the size of the last "H" in both ends. Once again we use linear algebra to detect the intersection points of the last H and find their sizes. In this case we would need to properly identify all the perpendicular lines in the stair. This could be achieved by reapplying the LSD algorithm on bounding boxes enclosing the detected stairs. Since there are potentially less artifact elements in the bounding box we could relax on the algorithm constraints. 
 
 ## Snake Detection 
 
