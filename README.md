@@ -11,6 +11,8 @@
  The algorithms were not developed seeking optimal computational performance, so parallelization and efficient data structures could further optimize the code. 
  
  The algorithms could also be further improved by fine-tuning all the global parameters. 
+ 
+ Another possible improvement is first identifying and removing the numbers in the image as it tends to have high accuracy. However, for now we tried to avoid any supervised machine learning.  
 
 ## Ladder Detection
 
